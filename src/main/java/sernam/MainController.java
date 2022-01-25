@@ -61,8 +61,8 @@ public class MainController {
 	
 	@FXML
 	public void initialize() {
-		FirefoxOptions options = new FirefoxOptions();
-		//ChromeOptions options = new ChromeOptions();
+		//FirefoxOptions options = new FirefoxOptions();
+		ChromeOptions options = new ChromeOptions();
 		List<String> arguments = new ArrayList<>();
 		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36";
 		
@@ -80,8 +80,8 @@ public class MainController {
 		
 		options.addArguments(arguments);
 		options.setCapability("general.useragent.override",user_agent);
-		driver = new FirefoxDriver(options);
-		//driver = new ChromeDriver(options);
+		//driver = new FirefoxDriver(options);
+		driver = new ChromeDriver(options);
 		dcontroller = new DriverController(driver, this);
 		//dcontroller.initialize();
 		

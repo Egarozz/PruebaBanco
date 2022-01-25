@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import com.jfoenix.controls.JFXSpinner?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="318.0" xmlns="http://javafx.com/javafx/8.0.311" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <AnchorPane layoutY="-2.0" prefHeight="85.0" prefWidth="318.0" style="-fx-background-color: black;">
+         <children>
+            <JFXButton contentDisplay="GRAPHIC_ONLY" layoutX="135.0" layoutY="19.0" prefHeight="47.0" prefWidth="49.0">
+               <graphic>
+                  <ImageView fitHeight="42.0" fitWidth="33.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@bn.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </JFXButton>
+         </children>
+      </AnchorPane>
+      <AnchorPane layoutY="100.0" prefHeight="301.0" prefWidth="318.0" style="-fx-background-color: black;">
+         <children>
+            <JFXSpinner layoutX="69.0" layoutY="40.0" prefHeight="203.0" prefWidth="180.0" />
+            <JFXButton focusTraversable="false" layoutX="103.0" layoutY="120.0" prefHeight="44.0" prefWidth="112.0" style="-fx-border-radius: 20;" text="Conectar" textFill="#eee2e2">
+               <font>
+                  <Font size="20.0" />
+               </font>
+            </JFXButton>
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>
