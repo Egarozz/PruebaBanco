@@ -81,7 +81,7 @@ public class MainController {
 		options.setCapability("general.useragent.override",user_agent);
 		driver = new FirefoxDriver(options);
 		//driver = new ChromeDriver(options);
-		dcontroller = new DriverController(driver, this);
+		dcontroller = new DriverController(driver);
 		//dcontroller.initialize();
 		
 	}

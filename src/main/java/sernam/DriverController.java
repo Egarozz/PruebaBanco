@@ -34,9 +34,9 @@ public class DriverController {
 	HashMap<String, WebElement> belement;
 	boolean loop = true;
 	private PTask<Property<String>> loadPage;
-	public DriverController(WebDriver driver, MainController controller) {
+	public DriverController(WebDriver driver) {
 		this.driver = driver;
-		this.c= controller;
+		//this.c= controller;
 		this.botones = new ArrayList<>();
 		this.belement = new HashMap<>();
 		

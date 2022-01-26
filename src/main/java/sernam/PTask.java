@@ -3,7 +3,8 @@ package sernam;
 import javafx.concurrent.Task;
 
 public class PTask<T> extends Task<T>{
-
+	private int progress = 0;
+	
 	@Override
 	protected T call() throws Exception {
 		// TODO Auto-generated method stub
@@ -13,5 +14,6 @@ public class PTask<T> extends Task<T>{
 	public void updateMessage(String s) {
 		super.updateMessage(s);
 	}
+	public int getP() {return progress;}
 
 }
