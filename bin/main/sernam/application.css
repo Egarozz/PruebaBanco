@@ -1,1 +1,14 @@
-/* JavaFX CSS - Leave this comment until you have at least create one rule which uses -fx-Property */
+.spin .percentage{
+	-fx-fill: transparent;
+}
+.spin .arc{
+	-fx-stroke: orange;
+}
+
+.jfx-button .jfx-rippler{
+   -jfx-rippler-fill:transparent;
+}
+.jfx-button:hover{
+	-fx-cursor: hand;
+   -fx-text-fill:green;
+}

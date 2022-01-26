@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="85.0" prefWidth="318.0" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/8.0.311" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <JFXButton contentDisplay="GRAPHIC_ONLY" layoutX="126.0" layoutY="15.0">
+         <graphic>
+            <ImageView fitHeight="47.0" fitWidth="53.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@bn.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </JFXButton>
+   </children>
+</AnchorPane>
