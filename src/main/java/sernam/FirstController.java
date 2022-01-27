@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
@@ -57,7 +59,8 @@ public class FirstController {
 		
 	}
 	public void initializeDriver(MainController controller, FirstController first, AnchorPane root) {
-		FirefoxOptions options = new FirefoxOptions();
+		ChromeOptions options = new ChromeOptions();
+		//FirefoxOptions options = new FirefoxOptions();
 		List<String> arguments = new ArrayList<>();
 		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36";
 		
@@ -75,8 +78,8 @@ public class FirstController {
 		
 		options.addArguments(arguments);
 		options.setCapability("general.useragent.override",user_agent);
-		driver = new FirefoxDriver(options);
-		//driver = new ChromeDriver(options);
+		//driver = new FirefoxDriver(options);
+		driver = new ChromeDriver(options);
 		dcontroller = new DriverController(driver, controller, first, root);
 		
 	}

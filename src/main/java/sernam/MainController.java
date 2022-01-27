@@ -43,9 +43,6 @@ public class MainController {
 	@FXML
 	TextField contra, tarjeta, captcha;
 	
-	@FXML
-	Label log;
-	
 	WebDriver driver;
 	List<Button> botones;
 	HashMap<String, WebElement> belement;

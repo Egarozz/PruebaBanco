@@ -164,6 +164,7 @@ public class DriverController {
 					public void run() {
 						first.connect.setVisible(false);
 						first.root.getChildren().add(connectPane);
+						connectPane.setLayoutY(100);
 						c.contra.setText("");
 						c.captcha.setText("");
 						c.tarjeta.setText("");
@@ -314,7 +315,6 @@ public class DriverController {
 		icaptcha.get(0).sendKeys(c.captcha.getCharacters());
 		for(char s: c.contra.getText().toCharArray()) {
 			belement.get(String.valueOf(s)).click();
-			c.log.setText("Colocando..." + String.valueOf(s));
 			tWait(500);
 		}
 		for(int i = 10; i <= 40; i++) {
@@ -365,27 +365,34 @@ public class DriverController {
 		int intentos = 0;
 		while(loop && intentos < 3) {
 			try {
+				for(int i = 0; i<=100;i++) {
+					task.updateProgress(i,100);
+					Thread.sleep(5);
+				}
 				if(pasoActual == 0) {
 					driver.switchTo().frame(driver.findElement(By.id("CuerpoIframe")));
 					Thread.sleep(250);
 					pasoActual = 1;
+					System.out.println("Paso 0");
 				}
 				if(pasoActual == 1) {
 					WebElement e = driver.findElement(By.id("cbOpciones-button"));
 					e.click();
 					Thread.sleep(250);
 					pasoActual = 2;
+					System.out.println("Paso 1");
 				}
 				if(pasoActual == 2) {
 					List<WebElement> el= driver.findElements(By.xpath("//li[@role='presentation']"));
 					el.get(2).click();
 					Thread.sleep(250);
 					pasoActual = 3;
+					System.out.println("Paso 2");
 				}
 
 				List<WebElement> saldo = driver.findElements(By.xpath("//tr//td[contains(text(),'Saldo disponible:')]/following-sibling::td"));
 				List<WebElement> movimiento = driver.findElements(By.xpath("//table[@id='movimiento']/tbody/tr"));
-
+				
 				if(!movimiento.isEmpty() && !saldo.isEmpty()) {
 					List<Movimiento> movs = new ArrayList<>();
 					for(WebElement elem: movimiento) {
@@ -399,7 +406,7 @@ public class DriverController {
 						movs.add(mov);
 					}
 
-					List<Movimiento> nuevos = getNuevoMov(movs, Double.parseDouble(saldo.get(0).getText()));
+					List<Movimiento> nuevos = getNuevoMov(movs, Double.parseDouble(saldo.get(0).getText().replaceAll(",", "").replaceAll(" ", "")));
 					System.out.println(nuevos.size());
 					if(!nuevos.isEmpty()) {
 						Platform.runLater(new Runnable() {
@@ -416,10 +423,12 @@ public class DriverController {
 				if(pasoActual == 3) {	
 					driver.switchTo().defaultContent();
 					pasoActual = 4;
+					System.out.println("Paso 3");
 				}
 				if(pasoActual == 4) {
 					driver.switchTo().frame(driver.findElement(By.id("menu_frame")));
 					pasoActual = 5;
+					System.out.println("Paso 4");
 				}
 
 				if(pasoActual == 5) {
@@ -427,17 +436,16 @@ public class DriverController {
 					WebElement regresar = opciones.get(0);
 					regresar.click();
 					pasoActual = 6;
+					System.out.println("Paso 5");
 				}
 
 				if(pasoActual == 6) {
 					driver.switchTo().defaultContent();
 					pasoActual = 0;
+					System.out.println("Paso 6");
 				}
-				Thread.sleep(250);
-				for(int i = 0; i<=100;i++) {
-					task.updateProgress(i,100);
-					Thread.sleep(5);
-				}
+				
+				
 				
 			}catch(Exception e) {
 				System.out.println(e.getMessage());
@@ -462,25 +470,12 @@ public class DriverController {
 		
 		if(ultimoMov == null) {
 			nuevos.add(movimientos.get(0));
-			nuevos.add(movimientos.get(0));
-			nuevos.add(movimientos.get(0));
 			ultimoMov = movimientos.get(0);
 			this.saldo = saldo;
 			return nuevos;
 		}
 		
-		for(int i = 0; i < movimientos.size(); i++) {
-			Movimiento current = movimientos.get(i);
-			if(!current.codigo.equals(ultimoMov.codigo)) break;
-			if(current.abono != ultimoMov.abono) break;
-			if(current.cargo != ultimoMov.cargo) break;
-			posAntiguo = i;
-		}
-		for(int i = 0; i < posAntiguo; i++) {
-			nuevos.add(movimientos.get(i));
-		}
-		
-		if(nuevos.isEmpty() && this.saldo != saldo) {
+		if(this.saldo != saldo) {
 			double nuevoSaldo = this.saldo;
 			for(int i = 0; i < movimientos.size(); i++) {
 				Movimiento current = movimientos.get(i);
@@ -496,6 +491,20 @@ public class DriverController {
 		for(int i = 0; i < posAntiguo; i++) {
 			nuevos.add(movimientos.get(i));
 		}
+		
+//		for(int i = 0; i < movimientos.size(); i++) {
+//			Movimiento current = movimientos.get(i);
+//			if(!current.codigo.equals(ultimoMov.codigo)) break;
+//			if(current.abono != ultimoMov.abono) break;
+//			if(current.cargo != ultimoMov.cargo) break;
+//			System.out.println("Cambio");
+//			posAntiguo = i;
+//		}
+//		for(int i = 0; i < posAntiguo; i++) {
+//			nuevos.add(movimientos.get(i));
+//		}
+		
+		
 		
 		
 		
