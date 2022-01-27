@@ -13,6 +13,7 @@ dependencies{
 	
 	implementation 'org.seleniumhq.selenium:selenium-java:4.1.1'
 	implementation 'com.jfoenix:jfoenix:8.0.10'
+	implementation 'org.controlsfx:controlsfx:8.40.18'
 }
 test {
     useJUnitPlatform()

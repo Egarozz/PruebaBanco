@@ -1,15 +1,20 @@
 package sernam;
 
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 
+import org.controlsfx.control.Notifications;
 import org.openqa.selenium.By;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
@@ -23,34 +28,115 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.image.Image;
+import javafx.scene.layout.AnchorPane;
 
 public class DriverController {
 	WebDriver driver;
 	MainController c;
+	FirstController first;
 	List<Button> botones;
 	HashMap<String, WebElement> belement;
 	boolean loop = true;
 	private PTask<Property<String>> loadPage;
-	public DriverController(WebDriver driver) {
+	private PTask<Void> connect;
+	private PTask<Void> update;
+	private PTask<Void> notificate;
+	private AnchorPane connectPane;
+	
+	private double saldo = -1;
+	private Movimiento ultimoMov = null;
+	private LinkedList<Movimiento> cola;
+
+	
+	public DriverController(WebDriver driver, MainController controller, FirstController first, AnchorPane root) {
 		this.driver = driver;
-		//this.c= controller;
+		this.c= controller;
+		this.first = first;
+		this.connectPane = root;
 		this.botones = new ArrayList<>();
 		this.belement = new HashMap<>();
-		
+		this.cola = new LinkedList<>();
 		c.captcha.setTextFormatter(new TextFormatter<>((change) -> {
 			change.setText(change.getText().toUpperCase());
 			return change;
 		}));
-		
+		Timer randomTimer = new Timer();
+		randomTimer.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				Platform.runLater(new Runnable() {
+
+					@Override
+					public void run() {
+						Movimiento mov = cola.pollFirst();
+						
+						if(mov != null) {
+							Notifications notificationBuilder = Notifications.create()
+									.title(mov.descripcion)
+									.text(mov.getDinero())
+									.graphic(null)
+									.hideAfter(javafx.util.Duration.INDEFINITE)
+									.position(Pos.TOP_RIGHT);
+							Toolkit.getDefaultToolkit().beep();
+							notificationBuilder.show();
+							System.out.println("NUEVO: " + mov.toString());
+						}
+						
+					}
+					
+				});
+				
+			}
+			
+		}, 0,2000);
 		c.bconectar.setOnAction(e->boton(e));
+		first.boton.setOnAction(e->boton(e));
 		
+		createLoadTask();
+		createLogTask();
+			
+		first.spinner.setVisible(false);
+		first.spinner.progressProperty().bind(connect.progressProperty());
+		first.log.textProperty().bind(loadPage.messageProperty());
+		
+	}
+	public void createNotificateTask() {
+		notificate = new PTask<Void>() {
+			@Override
+			protected Void call() throws Exception {
+				Platform.runLater(new Runnable() {
+
+					@Override
+					public void run() {
+						Movimiento mov = cola.pollFirst();
+						System.out.println("NUEVO: " + mov.toString());
+					}
+					
+				});
+				return null;
+			}
+		};
+	}
+	public void createUpdateTask() {
+		update = new PTask<Void>() {
+			@Override
+			protected Void call() throws Exception {
+				actualizar(driver,this);
+				return null;
+			}
+		};
+		first.spinner.progressProperty().bind(update.progressProperty());
+	}
+	public void createLoadTask() {
 		loadPage = new PTask<Property<String>>() {
 			@Override
 			protected Property<String> call() throws Exception {
-				
+				updateMessage("");
 				driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 				updateMessage("Conectando a la pagina");
 				driver.get("https://zonasegura1.bn.com.pe/BNWeb/Inicio");
@@ -61,7 +147,7 @@ public class DriverController {
 						processButtons(driver, loadPage);
 					}
 				});	
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 				updateMessage("Procesando captcha");
 				Platform.runLater(new Runnable(){
 					@Override
@@ -70,18 +156,51 @@ public class DriverController {
 					}
 				});	
 				
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 				updateMessage("Completado");	
 				
+				Platform.runLater(new Runnable(){
+					@Override
+					public void run() {
+						first.connect.setVisible(false);
+						first.root.getChildren().add(connectPane);
+						c.contra.setText("");
+						c.captcha.setText("");
+						c.tarjeta.setText("");
+					}
+				});	
 				
 				return null;
 			}
-			
-			
 		};
-		c.log.textProperty().bind(loadPage.messageProperty());
+		first.log.textProperty().bind(loadPage.messageProperty());
+		
+	}
+	public void createLogTask() {
+		connect = new PTask<Void>() {
+			@Override
+			protected Void call() throws Exception {
+				updateMessage("");
+				if(!conectar(this)) {
+					this.failed();
+				}
+				
+				return null;
+			}
+
+			@Override
+			protected void succeeded() {
+				createUpdateTask();
+				new Thread(update).start();
+			}
+				
+				
+		};
+		first.log.textProperty().bind(connect.messageProperty());
+		first.spinner.progressProperty().bind(connect.progressProperty());
 	}
 	public void initialize() {
+		createLoadTask();
 		new Thread(loadPage).start();
 	}
 	public List<WebElement> findButtons() {
@@ -137,8 +256,6 @@ public class DriverController {
 	
 	private void processButtons(WebDriver driver, PTask task) {
 		List<WebElement> elementos = findButtons();
-		task.updateMessage("Hola");
-		tWait(1000);
 		/* Colocar botones en un array para reducir el codigo de agregar listeners, ademas
 		 * Se coloca en el hashmap para poder tener un facil acceso segun el numero para 
 		 * automatizar los clicks a los botones
@@ -155,25 +272,44 @@ public class DriverController {
 		if(!e.getSource().equals(c.bconectar)) {
 			c.contra.setText(c.contra.getText() + ((Button)e.getSource()).getText());
 		}
-		if(e.getSource().equals(c.bconectar)) {
+		
+		if(e.getSource().equals(first.boton)) {
+			
 			initialize();
-		}	
+		}
+		if(e.getSource().equals(c.bconectar)) {
+			first.connect.setVisible(true);
+			first.root.getChildren().remove(connectPane);
+			first.spinner.setVisible(true);
+			first.log.textProperty().bind(connect.messageProperty());
+			createLogTask();
+			new Thread(connect).start();
+		}
+			
 			
 			
 	}
 	
-	public boolean conectar() {
+	public boolean conectar(PTask<Void> task) throws Exception{
 		/*  -Verificar que el textbox para la tarjeta, para el captcha y el boton de login esten presentes
 		 *  -Presionar los botones de la contrasena en un intervalo de 500 ms
 		 *  -Verificar que no haya un error
 		 *  -Si hay error retornar falso de lo contrario retornar verdadero
 		 */
+		task.updateMessage("Buscar objetos");
 		List<WebElement> itarjeta = driver.findElements(By.xpath("//input[@id='txtNumeroTarjeta']"));
 		List<WebElement> icaptcha = driver.findElements(By.xpath("//input[@id='txtCaptcha']"));
 		List<WebElement> ilogin = driver.findElements(By.xpath("//input[@id='btnLogin']"));
-		
 		if(itarjeta.isEmpty() || icaptcha.isEmpty() || ilogin.isEmpty()) return false;
 		
+		for(int i = 0; i <= 10; i++) {
+			task.updateProgress(i, 100);
+			Thread.sleep(10);
+		}
+		
+		
+		
+		task.updateMessage("Enviar registro");
 		itarjeta.get(0).sendKeys(c.tarjeta.getCharacters());
 		icaptcha.get(0).sendKeys(c.captcha.getCharacters());
 		for(char s: c.contra.getText().toCharArray()) {
@@ -181,15 +317,31 @@ public class DriverController {
 			c.log.setText("Colocando..." + String.valueOf(s));
 			tWait(500);
 		}
+		for(int i = 10; i <= 40; i++) {
+			task.updateProgress(i, 100);
+			Thread.sleep(10);
+		}
 		
+		
+		task.updateMessage("Logeando");
 		ilogin.get(0).click();
 		WebElement error = findError();
 		if(error != null) {
-			System.out.println(error.getText());
+			task.updateMessage(error.getText());
+			task.updateProgress(0, 100);
 			return false;
 		}
-		
+		for(int i = 40; i <= 80; i++) {
+			task.updateProgress(i, 100);
+			Thread.sleep(10);
+		}
+		task.updateMessage("Cargando pagina");
 		tWait(5000);
+		for(int i = 80; i <= 100; i++) {
+			task.updateProgress(i, 100);
+			Thread.sleep(10);
+		}
+		task.updateMessage("Conectado");
 		return true;
 		
 	}
@@ -207,32 +359,96 @@ public class DriverController {
 		
 	
 	
-	private void actualizar(WebDriver driver) {
-		try {
-			while(loop) {
-				driver.switchTo().frame(driver.findElement(By.id("CuerpoIframe")));
-				Thread.sleep(1000);
-				WebElement e = driver.findElement(By.id("cbOpciones-button"));
-				e.click();
-				Thread.sleep(1000);
-				List<WebElement> el= driver.findElements(By.xpath("//li[@role='presentation']"));
-				el.get(2).click();
-				Thread.sleep(1000);
-				WebElement ultima = driver.findElement(By.xpath("//td[@style='text-align: left; width:40%']"));
-				System.out.println(ultima.getText());
-				driver.switchTo().defaultContent();
-				driver.switchTo().frame(driver.findElement(By.id("menu_frame")));
-				List<WebElement> opciones = driver.findElements(By.xpath("//div[@class='accordionButton dax']"));
-				WebElement regresar = opciones.get(0);
-				regresar.click();
-				driver.switchTo().defaultContent();
-				Thread.sleep(1000);
+	private void actualizar(WebDriver driver, PTask<Void> task) {
+		task.updateProgress(0,100);
+		int pasoActual = 0;
+		int intentos = 0;
+		while(loop && intentos < 3) {
+			try {
+				if(pasoActual == 0) {
+					driver.switchTo().frame(driver.findElement(By.id("CuerpoIframe")));
+					Thread.sleep(250);
+					pasoActual = 1;
+				}
+				if(pasoActual == 1) {
+					WebElement e = driver.findElement(By.id("cbOpciones-button"));
+					e.click();
+					Thread.sleep(250);
+					pasoActual = 2;
+				}
+				if(pasoActual == 2) {
+					List<WebElement> el= driver.findElements(By.xpath("//li[@role='presentation']"));
+					el.get(2).click();
+					Thread.sleep(250);
+					pasoActual = 3;
+				}
+
+				List<WebElement> saldo = driver.findElements(By.xpath("//tr//td[contains(text(),'Saldo disponible:')]/following-sibling::td"));
+				List<WebElement> movimiento = driver.findElements(By.xpath("//table[@id='movimiento']/tbody/tr"));
+
+				if(!movimiento.isEmpty() && !saldo.isEmpty()) {
+					List<Movimiento> movs = new ArrayList<>();
+					for(WebElement elem: movimiento) {
+
+						String cod = elem.findElement(By.xpath(".//td[@style='text-align: center; width:10%']")).getText();
+						String desc = elem.findElement(By.xpath(".//td[@style='text-align: left; width:40%']")).getText();
+						String cargo = elem.findElement(By.xpath(".//td[@style='text-align: right; width:15%;color: #c51416;']")).getText();
+						String abono = elem.findElement(By.xpath(".//td[@style='text-align: right; width:15%']")).getText();
+
+						Movimiento mov = new Movimiento(cod,desc,cargo,abono);
+						movs.add(mov);
+					}
+
+					List<Movimiento> nuevos = getNuevoMov(movs, Double.parseDouble(saldo.get(0).getText()));
+					System.out.println(nuevos.size());
+					if(!nuevos.isEmpty()) {
+						Platform.runLater(new Runnable() {
+							@Override
+							public void run() {
+								for(Movimiento elem: nuevos) {
+									cola.addFirst(elem);
+								}
+							}
+						});	
+					}
+				}	
+
+				if(pasoActual == 3) {	
+					driver.switchTo().defaultContent();
+					pasoActual = 4;
+				}
+				if(pasoActual == 4) {
+					driver.switchTo().frame(driver.findElement(By.id("menu_frame")));
+					pasoActual = 5;
+				}
+
+				if(pasoActual == 5) {
+					List<WebElement> opciones = driver.findElements(By.xpath("//div[@class='accordionButton dax']"));
+					WebElement regresar = opciones.get(0);
+					regresar.click();
+					pasoActual = 6;
+				}
+
+				if(pasoActual == 6) {
+					driver.switchTo().defaultContent();
+					pasoActual = 0;
+				}
+				Thread.sleep(250);
+				for(int i = 0; i<=100;i++) {
+					task.updateProgress(i,100);
+					Thread.sleep(5);
+				}
+				
+			}catch(Exception e) {
+				System.out.println(e.getMessage());
+				System.out.println("Error -> " + intentos);
+				intentos++;
+				tWait(3000);
 			}
-		}catch(Exception e) {
-			
-			System.out.println(e.getMessage());
-			driver.quit();
 		}
+		task.updateProgress(0, 100);
+		task.updateMessage("Desconectado");
+		
 	}
 	private void tWait(long milis) {
 		try {
@@ -240,6 +456,85 @@ public class DriverController {
 		}catch(InterruptedException e) {}
 	}
 	
+	public List<Movimiento> getNuevoMov(List<Movimiento> movimientos, double saldo){
+		int posAntiguo = -1;
+		List<Movimiento> nuevos = new ArrayList<>();
+		
+		if(ultimoMov == null) {
+			nuevos.add(movimientos.get(0));
+			nuevos.add(movimientos.get(0));
+			nuevos.add(movimientos.get(0));
+			ultimoMov = movimientos.get(0);
+			this.saldo = saldo;
+			return nuevos;
+		}
+		
+		for(int i = 0; i < movimientos.size(); i++) {
+			Movimiento current = movimientos.get(i);
+			if(!current.codigo.equals(ultimoMov.codigo)) break;
+			if(current.abono != ultimoMov.abono) break;
+			if(current.cargo != ultimoMov.cargo) break;
+			posAntiguo = i;
+		}
+		for(int i = 0; i < posAntiguo; i++) {
+			nuevos.add(movimientos.get(i));
+		}
+		
+		if(nuevos.isEmpty() && this.saldo != saldo) {
+			double nuevoSaldo = this.saldo;
+			for(int i = 0; i < movimientos.size(); i++) {
+				Movimiento current = movimientos.get(i);
+				nuevoSaldo += current.cargo;
+				nuevoSaldo -= current.abono;
+				if(nuevoSaldo == saldo) {
+					posAntiguo = i;
+					break;
+				}
+			}
+		}	
+		
+		for(int i = 0; i < posAntiguo; i++) {
+			nuevos.add(movimientos.get(i));
+		}
+		
+		
+		
+		if(!nuevos.isEmpty()) ultimoMov = nuevos.get(0);
+		this.saldo = saldo;
+		return nuevos;
+			
+		
+	}
+	
+	public class Movimiento{
+		
+		private String codigo;
+		private String descripcion;
+		private double cargo;
+		private double abono;
+		public Movimiento(String codigo, String descripcion, String cargo, String abono) {
+			this.codigo = codigo;
+			this.descripcion = descripcion;
+			this.cargo = cargo.equals("") ? 0 : Double.parseDouble(cargo);
+			this.abono = abono.equals("") ? 0 : Double.parseDouble(abono);
+		}
+		public String getDinero() {
+			if(cargo != 0) {
+				return "Cargo: " + cargo;
+			}else {
+				return "Abono: " + abono;
+			}
+			
+		}
+		@Override
+		public String toString() {
+			return codigo + "    " + descripcion + "    " + cargo + "    " + abono;
+		}
+		
+		
+		
+		
+	}
 	
 
 }

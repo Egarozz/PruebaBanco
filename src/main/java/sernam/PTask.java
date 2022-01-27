@@ -14,6 +14,10 @@ public class PTask<T> extends Task<T>{
 	public void updateMessage(String s) {
 		super.updateMessage(s);
 	}
+	@Override
+	public void updateProgress(double a, double b) {
+		super.updateProgress(a,b);
+	}
 	public int getP() {return progress;}
 
 }

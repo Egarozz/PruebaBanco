@@ -1,5 +1,6 @@
 package sernam;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,9 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
 
 public class FirstController {
 
@@ -24,13 +27,36 @@ public class FirstController {
 	JFXButton boton;
 	@FXML
 	Label log;
+	@FXML
+	AnchorPane root, connect;
 	
 	int progres = 0;
-	Task<Void> progress;
 	WebDriver driver;
 	DriverController dcontroller ;
 	
 	public FirstController() {
+
+	}
+	@FXML 
+	public void initialize() {
+		spinner.setProgress(0);
+		try {
+			FXMLLoader fxmlLoader = new FXMLLoader();
+			AnchorPane root = (AnchorPane)fxmlLoader.load(getClass().getResource("Main.fxml").openStream());
+			MainController controller = (MainController) fxmlLoader.getController();
+			//this.root.getChildren().add(root);
+			initializeDriver(controller, this, root);
+			
+			//connect.setVisible(false);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+	
+		
+	}
+	public void initializeDriver(MainController controller, FirstController first, AnchorPane root) {
 		FirefoxOptions options = new FirefoxOptions();
 		List<String> arguments = new ArrayList<>();
 		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36";
@@ -51,36 +77,8 @@ public class FirstController {
 		options.setCapability("general.useragent.override",user_agent);
 		driver = new FirefoxDriver(options);
 		//driver = new ChromeDriver(options);
-		dcontroller = new DriverController(driver);
-		//dcontroller.initialize();
-	}
-	@FXML 
-	public void initialize() {
-		spinner.setProgress(0);
-		
-		progress = new Task<Void>() {
-
-			@Override
-			protected Void call() throws Exception {
-				while(progres <= 100) {
-					updateProgress(progres,100);
-					progres++;
-					Thread.sleep(100);
-				}
-				return null;
-			}	
-		};			
-				
-				
-		boton.setOnAction(e->conectar(e));
-		spinner.progressProperty().bind(progress.progressProperty());
-		log.textProperty().bind(progress.progressProperty().asString());
-		new Thread(progress).start();
-		
+		dcontroller = new DriverController(driver, controller, first, root);
 		
 	}
 	
-	public void conectar(ActionEvent e) {
-		
-	}
 }

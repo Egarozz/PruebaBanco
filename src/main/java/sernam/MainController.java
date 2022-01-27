@@ -57,31 +57,34 @@ public class MainController {
 		
 	}
 	
-	
+	public void boton() {
+		System.out.println("lol");
+	}
 	@FXML
 	public void initialize() {
-		FirefoxOptions options = new FirefoxOptions();
-		//ChromeOptions options = new ChromeOptions();
-		List<String> arguments = new ArrayList<>();
-		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36";
-		
-		arguments.add("--headless");
-		arguments.add("--window-size=1920,1080");
-		arguments.add("--allow-running-insecure-content");
-		arguments.add("--ignore-certificate-errors");
-		arguments.add("--disable-extensions");
-		arguments.add("--proxy-server='direct://'");
-		arguments.add("--proxy-bypass-list=*");
-		arguments.add("--start-maximized");
-		arguments.add("--disable-dev-shm-usage");
-		arguments.add("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36");
-		
-		
-		options.addArguments(arguments);
-		options.setCapability("general.useragent.override",user_agent);
-		driver = new FirefoxDriver(options);
-		//driver = new ChromeDriver(options);
-		dcontroller = new DriverController(driver);
+		b1.setOnAction(e->boton());
+//		FirefoxOptions options = new FirefoxOptions();
+//		//ChromeOptions options = new ChromeOptions();
+//		List<String> arguments = new ArrayList<>();
+//		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36";
+//		
+//		arguments.add("--headless");
+//		arguments.add("--window-size=1920,1080");
+//		arguments.add("--allow-running-insecure-content");
+//		arguments.add("--ignore-certificate-errors");
+//		arguments.add("--disable-extensions");
+//		arguments.add("--proxy-server='direct://'");
+//		arguments.add("--proxy-bypass-list=*");
+//		arguments.add("--start-maximized");
+//		arguments.add("--disable-dev-shm-usage");
+//		arguments.add("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36");
+//		
+//		
+//		options.addArguments(arguments);
+//		options.setCapability("general.useragent.override",user_agent);
+//		driver = new FirefoxDriver(options);
+//		//driver = new ChromeDriver(options);
+//		dcontroller = new DriverController(driver);
 		//dcontroller.initialize();
 		
 	}
