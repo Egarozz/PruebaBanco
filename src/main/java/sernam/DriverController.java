@@ -50,6 +50,7 @@ public class DriverController {
 	
 	private double saldo = -1;
 	private Movimiento ultimoMov = null;
+	public LinkedList<Movimiento> ultimos;
 	public LinkedList<Movimiento> cola;
 
 	private Timer updateMessage;
@@ -62,6 +63,7 @@ public class DriverController {
 		this.botones = new ArrayList<>();
 		this.belement = new HashMap<>();
 		this.cola = new LinkedList<>();
+		this.ultimos = new LinkedList<>();
 		c.captcha.setTextFormatter(new TextFormatter<>((change) -> {
 			change.setText(change.getText().toUpperCase());
 			return change;
@@ -267,27 +269,28 @@ public class DriverController {
 		int intentos = 0;
 		while(loop && intentos < 3) {
 			try {
+				
 				for(int i = 0; i<=100;i++) {
 					task.updateProgress(i,100);
 					Thread.sleep(5);
 				}
+				
 				if(pasoActual == 0) {
 					driver.switchTo().frame(driver.findElement(By.id("CuerpoIframe")));
-					Thread.sleep(250);
 					pasoActual = 1;
 					System.out.println("Paso 0");
 				}
 				if(pasoActual == 1) {
 					WebElement e = driver.findElement(By.id("cbOpciones-button"));
 					e.click();
-					Thread.sleep(250);
+					Thread.sleep(1000);
 					pasoActual = 2;
 					System.out.println("Paso 1");
 				}
 				if(pasoActual == 2) {
 					List<WebElement> el= driver.findElements(By.xpath("//li[@role='presentation']"));
 					el.get(2).click();
-					Thread.sleep(250);
+					Thread.sleep(500);
 					pasoActual = 3;
 					System.out.println("Paso 2");
 				}
@@ -296,7 +299,7 @@ public class DriverController {
 				List<WebElement> movimiento = driver.findElements(By.xpath("//table[@id='movimiento']/tbody/tr"));
 				
 				if(!movimiento.isEmpty() && !saldo.isEmpty()) {
-					List<Movimiento> movs = new ArrayList<>();
+					LinkedList<Movimiento> movs = new LinkedList<>();
 					for(WebElement elem: movimiento) {
 
 						String cod = elem.findElement(By.xpath(".//td[@style='text-align: center; width:10%']")).getText();
@@ -308,7 +311,7 @@ public class DriverController {
 						movs.add(mov);
 					}
 
-					List<Movimiento> nuevos = getNuevoMov(movs, Double.parseDouble(saldo.get(0).getText().replaceAll(",", "").replaceAll(" ", "")));
+					List<Movimiento> nuevos = getNuevoMov(ultimos,movs);
 					System.out.println(nuevos.size());
 					if(!nuevos.isEmpty()) {
 						Platform.runLater(new Runnable() {
@@ -326,11 +329,13 @@ public class DriverController {
 					driver.switchTo().defaultContent();
 					pasoActual = 4;
 					System.out.println("Paso 3");
+					Thread.sleep(500);
 				}
 				if(pasoActual == 4) {
 					driver.switchTo().frame(driver.findElement(By.id("menu_frame")));
 					pasoActual = 5;
 					System.out.println("Paso 4");
+					Thread.sleep(1000);
 				}
 
 				if(pasoActual == 5) {
@@ -339,12 +344,15 @@ public class DriverController {
 					regresar.click();
 					pasoActual = 6;
 					System.out.println("Paso 5");
+					Thread.sleep(1000);
 				}
+				
 
 				if(pasoActual == 6) {
 					driver.switchTo().defaultContent();
 					pasoActual = 0;
 					System.out.println("Paso 6");
+					Thread.sleep(1000);
 				}
 				
 				
@@ -353,7 +361,7 @@ public class DriverController {
 				System.out.println(e.getMessage());
 				System.out.println("Error -> " + intentos);
 				intentos++;
-				tWait(3000);
+				tWait(5000);
 			}
 		}
 		
@@ -365,7 +373,9 @@ public class DriverController {
 	public void tWait(long milis) {
 		try {
 			Thread.sleep(milis);
-		}catch(InterruptedException e) {}
+		}catch(InterruptedException e) {
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	public List<Movimiento> getNuevoMov(List<Movimiento> movimientos, double saldo){
@@ -419,6 +429,51 @@ public class DriverController {
 		
 	}
 	
+	public List<Movimiento> getNuevoMov(LinkedList<Movimiento> m, LinkedList<Movimiento> n){
+		int movimientos = 0;
+		List<Movimiento> nuevos = new ArrayList<>();
+		
+		if(m.isEmpty()) {
+			nuevos.add(n.get(0));
+			m.clear();
+			for(Movimiento mov: n) {
+				m.add(mov);
+			}
+			return nuevos;
+		}
+		for(int i = 0; i < n.size(); i++) {
+			if(arrayEqual(m,n)) {
+				break;
+			}
+			m.pollLast();
+			m.addFirst(n.get(i));
+			movimientos++;
+			
+		}
+		
+		for(int i = 0; i < movimientos; i++) {
+			nuevos.add(n.get(i));
+		}
+		m.clear();
+		for(Movimiento mov: n) {
+			m.add(mov);
+		}
+		return nuevos;
+	}
+	
+	public boolean arrayEqual(LinkedList<Movimiento> m, LinkedList<Movimiento> n) {
+		if(m.size() != n.size()) return false;
+		
+		for(int i = 0; i < m.size(); i++) {
+			Movimiento a = m.get(i);
+			Movimiento b = n.get(i);
+			if(!a.codigo.equals(b.codigo)) return false;
+			if(!a.descripcion.equals(b.descripcion)) return false;
+			if(a.abono != b.abono) return false;
+			if(a.cargo != b.cargo) return false;
+		}
+		return true;
+	}
 
 	
 
