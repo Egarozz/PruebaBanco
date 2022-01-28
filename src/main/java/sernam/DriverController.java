@@ -33,24 +33,26 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
+import sernam.tasks.ConnectPageTask;
+import sernam.tasks.LoadPageTask;
+import sernam.tasks.PublicTask;
+import sernam.tasks.UpdateMessageTimer;
 
 public class DriverController {
-	WebDriver driver;
-	MainController c;
-	FirstController first;
+	public WebDriver driver;
+	public MainController c;
+	public FirstController first;
 	List<Button> botones;
 	HashMap<String, WebElement> belement;
 	boolean loop = true;
-	private PTask<Property<String>> loadPage;
-	private PTask<Void> connect;
-	private PTask<Void> update;
-	private PTask<Void> notificate;
-	private AnchorPane connectPane;
+	public PTask<Void> update;
+	public AnchorPane connectPane;
 	
 	private double saldo = -1;
 	private Movimiento ultimoMov = null;
-	private LinkedList<Movimiento> cola;
+	public LinkedList<Movimiento> cola;
 
+	private Timer updateMessage;
 	
 	public DriverController(WebDriver driver, MainController controller, FirstController first, AnchorPane root) {
 		this.driver = driver;
@@ -64,64 +66,22 @@ public class DriverController {
 			change.setText(change.getText().toUpperCase());
 			return change;
 		}));
-		Timer randomTimer = new Timer();
-		randomTimer.schedule(new TimerTask() {
-
-			@Override
-			public void run() {
-				Platform.runLater(new Runnable() {
-
-					@Override
-					public void run() {
-						Movimiento mov = cola.pollFirst();
-						
-						if(mov != null) {
-							Notifications notificationBuilder = Notifications.create()
-									.title(mov.descripcion)
-									.text(mov.getDinero())
-									.graphic(null)
-									.hideAfter(javafx.util.Duration.INDEFINITE)
-									.position(Pos.TOP_RIGHT);
-							Toolkit.getDefaultToolkit().beep();
-							notificationBuilder.show();
-							System.out.println("NUEVO: " + mov.toString());
-						}
-						
-					}
-					
-				});
-				
-			}
-			
-		}, 0,2000);
+		updateMessage = new Timer();
+		
+		
 		c.bconectar.setOnAction(e->boton(e));
 		first.boton.setOnAction(e->boton(e));
 		
-		createLoadTask();
-		createLogTask();
+		
+
 			
 		first.spinner.setVisible(false);
-		first.spinner.progressProperty().bind(connect.progressProperty());
-		first.log.textProperty().bind(loadPage.messageProperty());
 		
-	}
-	public void createNotificateTask() {
-		notificate = new PTask<Void>() {
-			@Override
-			protected Void call() throws Exception {
-				Platform.runLater(new Runnable() {
+		
 
-					@Override
-					public void run() {
-						Movimiento mov = cola.pollFirst();
-						System.out.println("NUEVO: " + mov.toString());
-					}
-					
-				});
-				return null;
-			}
-		};
 	}
+	
+
 	public void createUpdateTask() {
 		update = new PTask<Void>() {
 			@Override
@@ -132,76 +92,13 @@ public class DriverController {
 		};
 		first.spinner.progressProperty().bind(update.progressProperty());
 	}
-	public void createLoadTask() {
-		loadPage = new PTask<Property<String>>() {
-			@Override
-			protected Property<String> call() throws Exception {
-				updateMessage("");
-				driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-				updateMessage("Conectando a la pagina");
-				driver.get("https://zonasegura1.bn.com.pe/BNWeb/Inicio");
-				updateMessage("Procesando botones");
-				Platform.runLater(new Runnable(){
-					@Override
-					public void run() {
-						processButtons(driver, loadPage);
-					}
-				});	
-				Thread.sleep(2000);
-				updateMessage("Procesando captcha");
-				Platform.runLater(new Runnable(){
-					@Override
-					public void run() {
-						processCaptcha(driver);
-					}
-				});	
-				
-				Thread.sleep(2000);
-				updateMessage("Completado");	
-				
-				Platform.runLater(new Runnable(){
-					@Override
-					public void run() {
-						first.connect.setVisible(false);
-						first.root.getChildren().add(connectPane);
-						connectPane.setLayoutY(100);
-						c.contra.setText("");
-						c.captcha.setText("");
-						c.tarjeta.setText("");
-					}
-				});	
-				
-				return null;
-			}
-		};
-		first.log.textProperty().bind(loadPage.messageProperty());
+	
+	
 		
-	}
-	public void createLogTask() {
-		connect = new PTask<Void>() {
-			@Override
-			protected Void call() throws Exception {
-				updateMessage("");
-				if(!conectar(this)) {
-					this.failed();
-				}
-				
-				return null;
-			}
-
-			@Override
-			protected void succeeded() {
-				createUpdateTask();
-				new Thread(update).start();
-			}
-				
-				
-		};
-		first.log.textProperty().bind(connect.messageProperty());
-		first.spinner.progressProperty().bind(connect.progressProperty());
-	}
+	
 	public void initialize() {
-		createLoadTask();
+		LoadPageTask loadPage = new LoadPageTask(this);
+		first.log.textProperty().bind(loadPage.messageProperty());
 		new Thread(loadPage).start();
 	}
 	public List<WebElement> findButtons() {
@@ -231,7 +128,7 @@ public class DriverController {
 	}	
 	
 	
-	private void processCaptcha(WebDriver driver) {
+	public void processCaptcha(WebDriver driver) {
 		WebElement img = findCaptcha();
 		if(img == null) {return;}
 		
@@ -255,7 +152,7 @@ public class DriverController {
 		
 	
 	
-	private void processButtons(WebDriver driver, PTask task) {
+	public void processButtons(WebDriver driver, PublicTask task) {
 		List<WebElement> elementos = findButtons();
 		/* Colocar botones en un array para reducir el codigo de agregar listeners, ademas
 		 * Se coloca en el hashmap para poder tener un facil acceso segun el numero para 
@@ -279,19 +176,24 @@ public class DriverController {
 			initialize();
 		}
 		if(e.getSource().equals(c.bconectar)) {
+			
 			first.connect.setVisible(true);
 			first.root.getChildren().remove(connectPane);
 			first.spinner.setVisible(true);
-			first.log.textProperty().bind(connect.messageProperty());
-			createLogTask();
-			new Thread(connect).start();
+			
+			ConnectPageTask conn = new ConnectPageTask(this);
+			first.log.textProperty().bind(conn .messageProperty());
+			first.spinner.progressProperty().bind(conn.progressProperty());
+			new Thread(conn).start();
+			updateMessage.schedule(new UpdateMessageTimer(this), 0,2000);
+			
 		}
 			
 			
 			
 	}
 	
-	public boolean conectar(PTask<Void> task) throws Exception{
+	public boolean conectar(PublicTask task) throws Exception{
 		/*  -Verificar que el textbox para la tarjeta, para el captcha y el boton de login esten presentes
 		 *  -Presionar los botones de la contrasena en un intervalo de 500 ms
 		 *  -Verificar que no haya un error
@@ -454,11 +356,13 @@ public class DriverController {
 				tWait(3000);
 			}
 		}
+		
+		
 		task.updateProgress(0, 100);
 		task.updateMessage("Desconectado");
 		
 	}
-	private void tWait(long milis) {
+	public void tWait(long milis) {
 		try {
 			Thread.sleep(milis);
 		}catch(InterruptedException e) {}
@@ -515,35 +419,7 @@ public class DriverController {
 		
 	}
 	
-	public class Movimiento{
-		
-		private String codigo;
-		private String descripcion;
-		private double cargo;
-		private double abono;
-		public Movimiento(String codigo, String descripcion, String cargo, String abono) {
-			this.codigo = codigo;
-			this.descripcion = descripcion;
-			this.cargo = cargo.equals("") ? 0 : Double.parseDouble(cargo);
-			this.abono = abono.equals("") ? 0 : Double.parseDouble(abono);
-		}
-		public String getDinero() {
-			if(cargo != 0) {
-				return "Cargo: " + cargo;
-			}else {
-				return "Abono: " + abono;
-			}
-			
-		}
-		@Override
-		public String toString() {
-			return codigo + "    " + descripcion + "    " + cargo + "    " + abono;
-		}
-		
-		
-		
-		
-	}
+
 	
 
 }

@@ -41,7 +41,16 @@ public class MainController {
 	ImageView imagen;
 	
 	@FXML
-	TextField contra, tarjeta, captcha;
+	public
+	TextField contra;
+
+	@FXML
+	public
+	TextField tarjeta;
+
+	@FXML
+	public
+	TextField captcha;
 	
 	WebDriver driver;
 	List<Button> botones;
